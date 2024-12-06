@@ -64,27 +64,27 @@ pub fn part2(s: &str) -> u32 {
     pos += 1;
     let mut ans = 0;
     {
-        let mut buf = vec![0 as u8; 20];
+        let mut buf = vec![0 as u16; 32];
         buf.clear();
         let mut mask: u128 = 0u128;
         let mut valid: bool = true;
-        let mut prev_pos: usize = pos;
         while pos + 2 <= bl {
-            let page: u8 = (b[pos] - b'0') * 10 + b[pos + 1] - b'0';
-            buf.push(page);
+            let page: u16 = ((b[pos] - b'0') * 10 + b[pos + 1] - b'0') as u16;
+            buf.push(page | (buf.len() << 8) as u16);
             valid &= masks[page as usize] & mask == 0;
             mask |= 1 << page;
             if pos + 2 == bl || b[pos + 2] == b'\n' {
                 if !valid {
-                    let num_items= (pos - prev_pos) / 3 + 1;
-                    buf.sort_by(|a, b| {
-                        return if (masks[*b as usize] & (1u128 << *a)) == 0 { Ordering::Equal } else { Ordering::Less };
+                    let num_items = buf.len();
+                    let (_a, b, _c) = buf.select_nth_unstable_by(num_items / 2, |a, b| {
+                        return if (masks[(*b & 0xff) as usize] & (1u128 << (*a & 0xff))) == 0 {
+                            if *a > *b { Ordering::Greater } else { Ordering::Equal }
+                        } else { Ordering::Less };
                     });
-                    ans += buf[num_items / 2] as u32;
+                    ans += (*b & 0xff) as u32;
                 }
                 mask = 0;
                 valid = true;
-                prev_pos = pos + 3;
                 buf.clear();
             }
             pos += 3;
