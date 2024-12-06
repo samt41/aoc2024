@@ -1,20 +1,52 @@
 use std::cmp::Ordering;
+use core::simd::prelude::*;
 
 pub fn part1(s: &str) -> u32 {
     let b = s.as_bytes();
     let bl = b.len();
 
-    let mut masks = [0 as u128; 100];
+    let muls = u8x64::from_array([
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0, 0,
+    ]);
+    let mut masks = [0 as u128; 128];
     let mut pos = 0;
     {
-        while pos + 6 < bl {
-            if b[pos] == b'\n' { break; }
-            masks[((b[pos] - b'0') * 10 + b[pos + 1] - b'0') as usize] |=
-                (1 as u128) << ((b[pos + 3] - b'0') * 10 + b[pos + 4] - b'0');
-            pos += 6;
+        while pos + 64 < bl {
+            let line = u8x64::load_or_default(&b[pos..pos+64]);
+            let linenorm = (line - u8x64::splat(b'0')) * muls;
+            let lineadd = linenorm + linenorm.rotate_elements_left::<1>();
+            let npos = lineadd.simd_eq(u8x64::splat(132)).first_set();
+            let nposw = npos.unwrap_or(60);
+
+            let nums = lineadd.as_array();
+            for i in (0..nposw).step_by(6) {
+                masks[nums[i] as usize] |= (1u128) << nums[i + 3];
+            }
+            pos += nposw;
+            if npos.is_some() { break; }
         }
     }
-    pos += 1;
+    pos += 2;
     let mut ans = 0;
     {
         let mut mask: u128 = 0u128;
@@ -50,18 +82,48 @@ pub fn part2(s: &str) -> u32 {
     let b = s.as_bytes();
     let bl = b.len();
 
-    let mut masks = [0 as u128; 256];
+    let muls = u8x64::from_array([
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0,
+        10, 1, 0, 0,
+    ]);
+    let mut masks = [0 as u128; 128];
     let mut pos = 0;
     {
-        while pos + 6 < bl {
-            if b[pos] == b'\n' { break; }
-            let from = ((b[pos] - b'0') * 10 + b[pos + 1] - b'0') as usize;
-            let to = ((b[pos + 3] - b'0') * 10 + b[pos + 4] - b'0') as usize;
-            masks[from] |= 1u128 << to;
-            pos += 6;
+        while pos + 64 < bl {
+            let line = u8x64::load_or_default(&b[pos..pos+64]);
+            let linenorm = (line - u8x64::splat(b'0')) * muls;
+            let lineadd = linenorm + linenorm.rotate_elements_left::<1>();
+            let npos = lineadd.simd_eq(u8x64::splat(132)).first_set();
+            let nposw = npos.unwrap_or(60);
+
+            let nums = lineadd.as_array();
+            for i in (0..nposw).step_by(6) {
+                masks[nums[i] as usize] |= (1u128) << nums[i + 3];
+            }
+            pos += nposw;
+            if npos.is_some() { break; }
         }
     }
-    pos += 1;
+    pos += 2;
     let mut ans = 0;
     {
         let mut buf = vec![0 as u16; 32];
