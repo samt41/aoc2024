@@ -68,12 +68,6 @@ pub fn part1(s: &str) -> u32 {
             }
             pos += 3;
         }
-        if valid { // last item
-            let page: u8 = (b[pos] - b'0') * 10 + b[pos + 1] - b'0';
-            if masks[page as usize] & mask == 0 {
-                ans += ((b[prev_pos + (pos + 2 - prev_pos) / 2 - 1] - b'0') * 10 + b[prev_pos + (pos + 2 - prev_pos) / 2] - b'0') as u32
-            }
-        }
     }
     return ans;
 }
@@ -130,12 +124,12 @@ pub fn part2(s: &str) -> u32 {
         buf.clear();
         let mut mask: u128 = 0u128;
         let mut valid: bool = true;
-        while pos + 2 <= bl {
+        while pos + 2 < bl {
             let page: u16 = ((b[pos] - b'0') * 10 + b[pos + 1] - b'0') as u16;
             buf.push(page | (buf.len() << 8) as u16);
             valid &= masks[page as usize] & mask == 0;
             mask |= 1 << page;
-            if pos + 2 == bl || b[pos + 2] == b'\n' {
+            if b[pos + 2] == b'\n' {
                 if !valid {
                     let num_items = buf.len();
                     let (_a, b, _c) = buf.select_nth_unstable_by(num_items / 2, |a, b| {
