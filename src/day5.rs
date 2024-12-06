@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 pub fn part1(s: &str) -> u32 {
     let b = s.as_bytes();
     let bl = b.len();
@@ -55,8 +57,7 @@ pub fn part2(s: &str) -> u32 {
             if b[pos] == b'\n' { break; }
             let from = ((b[pos] - b'0') * 10 + b[pos + 1] - b'0') as usize;
             let to = ((b[pos + 3] - b'0') * 10 + b[pos + 4] - b'0') as usize;
-            masks[128 + from] |= 1u128 << to;
-            masks[to] |= 1u128 << from;
+            masks[from] |= 1u128 << to;
             pos += 6;
         }
     }
@@ -71,30 +72,14 @@ pub fn part2(s: &str) -> u32 {
         while pos + 2 <= bl {
             let page: u8 = (b[pos] - b'0') * 10 + b[pos + 1] - b'0';
             buf.push(page);
-            valid &= masks[128 + page as usize] & mask == 0;
+            valid &= masks[page as usize] & mask == 0;
             mask |= 1 << page;
             if pos + 2 == bl || b[pos + 2] == b'\n' {
                 if !valid {
-                    let num_items= (pos - prev_pos) / 3 + 1; //(pos + 3 - prev_pos) / 3;
-                    let mut n = num_items;
-                    while n > 1 {
-                        mask = 1 << buf[0];
-                        let mut new_n = 0;
-                        for j in 1..n {
-                            let it = buf[j] as usize;
-                            let should_swap = masks[it] & mask != 0;
-                            if should_swap {
-                                let tmp = buf[j];
-                                buf[j] = buf[j - 1];
-                                buf[j - 1] = tmp;
-                                mask |= 1 << tmp;
-                                new_n = j;
-                            } else { 
-                                mask |= 1 << it;
-                            }
-                        }
-                        n = new_n;
-                    }
+                    let num_items= (pos - prev_pos) / 3 + 1;
+                    buf.sort_by(|a, b| {
+                        return if (masks[*b as usize] & (1u128 << *a)) == 0 { Ordering::Equal } else { Ordering::Less };
+                    });
                     ans += buf[num_items / 2] as u32;
                 }
                 mask = 0;
