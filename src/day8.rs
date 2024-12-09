@@ -5,7 +5,7 @@ pub fn part1(s: &str) -> u32 {
     unsafe {
         let b = s.as_bytes();
         let bl = b.len();
-        let mut antinodes = vec![0u8; bl];
+        let mut antinodes = [0u64; 64];
         let mut nodes = [0u64; 128];
         let mut y = 0u32;
         for x in (0..bl).step_by(W as usize) {
@@ -22,7 +22,7 @@ pub fn part1(s: &str) -> u32 {
             }
             y += 256;
         }
-        for i in 0..128 {
+        for i in 0..75 {
             let curr = nodes[i];
             let n = (79 - curr.leading_zeros()) / 16;
             for j in 0..n {
@@ -32,20 +32,18 @@ pub fn part1(s: &str) -> u32 {
                     let xy = nk - nj;
                     let antinode1 = nj.wrapping_sub(xy);
                     let antinode2 = nk + xy;
-                    if antinode1 & 0xff < W - 1{
-                        let pos = ((antinode1 >> 8) * W + (antinode1 & 0xff)) as usize;
-                        if pos < bl { antinodes[pos] = 1; }
+                    if antinode1 & 0xC0C0 == 0 {
+                        antinodes[(antinode1 >> 8) as usize] |= 1 << (antinode1 & 63);
                     }
-                    if antinode2 & 0xff < W - 1 {
-                        let pos = ((antinode2 >> 8) * W + (antinode2 & 0xff)) as usize;
-                        if pos < bl { antinodes[pos] = 1; }
+                    if antinode2 & 0xC0C0 == 0 {
+                        antinodes[(antinode2 >> 8) as usize] |= 1 << (antinode2 & 63);
                     }
                 }
             }
         }
         let mut ans = 0;
-        for i in (0..bl).step_by(64) {
-            ans += u8x64::load_or_default(&antinodes[i..usize::min(i+64, bl)]).simd_eq(u8x64::splat(1)).to_bitmask().count_ones();
+        for i in 0..(W as usize - 1) {
+            ans += (antinodes[i] & ((1 << (W - 1)) - 1)).count_ones();
         }
         return ans;
     }
@@ -55,7 +53,7 @@ pub fn part2(s: &str) -> u32 {
     unsafe {
         let b = s.as_bytes();
         let bl = b.len();
-        let mut antinodes = vec![0u8; bl];
+        let mut antinodes = [0u64; 64];
         let mut nodes = [0u64; 128];
         let mut y = 0u32;
         for x in (0..bl).step_by(W as usize) {
@@ -72,7 +70,7 @@ pub fn part2(s: &str) -> u32 {
             }
             y += 256;
         }
-        for i in 0..128 {
+        for i in 0..75 {
             let curr = nodes[i];
             let n = (79 - curr.leading_zeros()) / 16;
             for j in 0..n {
@@ -82,26 +80,24 @@ pub fn part2(s: &str) -> u32 {
                     let xy = nk - nj;
                     let mut antinode = nj;
                     loop {
-                        let pos = ((antinode >> 8) * W + (antinode & 0xff)) as usize;
-                        let valid = antinode & 0xff < W - 1 && pos < bl;
-                        if valid { antinodes[pos] = 1; }
-                        else { break; }
+                        if antinode & 0xC0C0 == 0 {
+                            antinodes[(antinode >> 8) as usize] |= 1 << (antinode & 63);
+                        } else { break; }
                         antinode = antinode.wrapping_sub(xy);
                     }
                     antinode = nk;
                     loop {
-                        let pos = ((antinode >> 8) * W + (antinode & 0xff)) as usize;
-                        let valid = antinode & 0xff < W - 1 && pos < bl;
-                        if valid { antinodes[pos] = 1; }
-                        else { break; }
+                        if antinode & 0xC0C0 == 0 {
+                            antinodes[(antinode >> 8) as usize] |= 1 << (antinode & 63);
+                        } else { break; }
                         antinode += xy;
                     }
                 }
             }
         }
         let mut ans = 0;
-        for i in (0..bl).step_by(64) {
-            ans += u8x64::load_or_default(&antinodes[i..usize::min(i+64, bl)]).simd_eq(u8x64::splat(1)).to_bitmask().count_ones();
+        for i in 0..(W as usize - 1) {
+            ans += (antinodes[i] & ((1 << (W - 1)) - 1)).count_ones();
         }
         return ans;
     }
