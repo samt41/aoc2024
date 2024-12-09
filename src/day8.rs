@@ -1,12 +1,12 @@
 use core::simd::prelude::*;
 
-const W: u32 = 51;
+const W: u16 = 51;
 pub fn part1(s: &str) -> u32 {
     unsafe {
         let b = s.as_bytes();
         let bl = b.len();
         let mut antinodes = vec![0u8; bl];
-        let mut nodes = vec![0u32];
+        let mut nodes = [0u64; 128];
         let mut y = 0u32;
         for x in (0..bl).step_by(W as usize) {
             let map = u8x64::load_select_unchecked(
@@ -16,31 +16,30 @@ pub fn part1(s: &str) -> u32 {
             let mut mask = map.simd_ge(u8x64::splat(b'0')).to_bitmask() as u64;
             while mask != 0 {
                 let pos = mask.trailing_zeros() as usize;
-                nodes.push(((b[x + pos] as u32) << 16) | (y << 8) | pos as u32);
+                let realx = (b[x + pos] - b'0') as usize;
+                nodes[realx] = (nodes[realx] << 16) | 32768 | y as u64 | pos as u64;
                 mask = mask & (mask - 1);
             }
-            y += 1;
+            y += 256;
         }
-        nodes.sort_unstable();
-        let mut start = 0;
-        for end in 1..nodes.len() {
-            let ne = nodes[end];
-            if (ne ^ nodes[start]) >> 16 != 0 {
-                start = end;
-                continue;
-            }
-            for i in start..end {
-                let nc = nodes[i];
-                let xy = ne - nc;
-                let antinode1 = nc - xy;
-                let antinode2 = ne + xy;
-                if antinode1 & 0xff < W - 1{
-                    let pos = (((antinode1 & 0xff00) * W >> 8) + (antinode1 & 0xff)) as usize;
-                    if pos < bl { antinodes[pos] = 1; }
-                }
-                if antinode2 & 0xff < W - 1 {
-                    let pos = (((antinode2 & 0xff00) * W >> 8) + (antinode2 & 0xff)) as usize;
-                    if pos < bl { antinodes[pos] = 1; }
+        for i in 0..128 {
+            let curr = nodes[i];
+            let n = (79 - curr.leading_zeros()) / 16;
+            for j in 0..n {
+                let nj = (curr >> (j * 16)) as u16 & 0x7fff;
+                for k in 0..j {
+                    let nk = (curr >> (k * 16)) as u16 & 0x7fff;
+                    let xy = nk - nj;
+                    let antinode1 = nj.wrapping_sub(xy);
+                    let antinode2 = nk + xy;
+                    if antinode1 & 0xff < W - 1{
+                        let pos = ((antinode1 >> 8) * W + (antinode1 & 0xff)) as usize;
+                        if pos < bl { antinodes[pos] = 1; }
+                    }
+                    if antinode2 & 0xff < W - 1 {
+                        let pos = ((antinode2 >> 8) * W + (antinode2 & 0xff)) as usize;
+                        if pos < bl { antinodes[pos] = 1; }
+                    }
                 }
             }
         }
@@ -57,7 +56,7 @@ pub fn part2(s: &str) -> u32 {
         let b = s.as_bytes();
         let bl = b.len();
         let mut antinodes = vec![0u8; bl];
-        let mut nodes = vec![0u32];
+        let mut nodes = [0u64; 128];
         let mut y = 0u32;
         for x in (0..bl).step_by(W as usize) {
             let map = u8x64::load_select_unchecked(
@@ -67,37 +66,36 @@ pub fn part2(s: &str) -> u32 {
             let mut mask = map.simd_ge(u8x64::splat(b'0')).to_bitmask() as u64;
             while mask != 0 {
                 let pos = mask.trailing_zeros() as usize;
-                nodes.push(((b[x + pos] as u32) << 16) | (y << 8) | pos as u32);
+                let realx = (b[x + pos] - b'0') as usize;
+                nodes[realx] = (nodes[realx] << 16) | 32768 | y as u64 | pos as u64;
                 mask = mask & (mask - 1);
             }
-            y += 1;
+            y += 256;
         }
-        nodes.sort_unstable();
-        let mut start = 0;
-        for end in 1..nodes.len() {
-            let ne = nodes[end];
-            if (ne ^ nodes[start]) >> 16 != 0 {
-                start = end;
-                continue;
-            }
-            for i in start..end {
-                let nc = nodes[i];
-                let xy = ne - nc;
-                let mut antinode = nc;
-                loop {
-                    let pos = (((antinode & 0xff00) * W >> 8) + (antinode & 0xff)) as usize;
-                    let valid = antinode & 0xff < W - 1 && pos < bl;
-                    if valid { antinodes[pos] = 1; }
-                    else { break; }
-                    antinode -= xy;
-                }
-                antinode = ne;
-                loop {
-                    let pos = (((antinode & 0xff00) * W >> 8) + (antinode & 0xff)) as usize;
-                    let valid = antinode & 0xff < W - 1 && pos < bl;
-                    if valid { antinodes[pos] = 1; }
-                    else { break; }
-                    antinode += xy;
+        for i in 0..128 {
+            let curr = nodes[i];
+            let n = (79 - curr.leading_zeros()) / 16;
+            for j in 0..n {
+                let nj = (curr >> (j * 16)) as u16 & 0x7fff;
+                for k in 0..j {
+                    let nk = (curr >> (k * 16)) as u16 & 0x7fff;
+                    let xy = nk - nj;
+                    let mut antinode = nj;
+                    loop {
+                        let pos = ((antinode >> 8) * W + (antinode & 0xff)) as usize;
+                        let valid = antinode & 0xff < W - 1 && pos < bl;
+                        if valid { antinodes[pos] = 1; }
+                        else { break; }
+                        antinode = antinode.wrapping_sub(xy);
+                    }
+                    antinode = nk;
+                    loop {
+                        let pos = ((antinode >> 8) * W + (antinode & 0xff)) as usize;
+                        let valid = antinode & 0xff < W - 1 && pos < bl;
+                        if valid { antinodes[pos] = 1; }
+                        else { break; }
+                        antinode += xy;
+                    }
                 }
             }
         }
