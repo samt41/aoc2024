@@ -4,10 +4,9 @@ pub fn part1(s: &str) -> u32 {
         let bl = b.len();
         let W = (bl as f32).sqrt() as usize;
         let D = [(!(W+1))+1, 1, W+1, (!1)+1];
-        let mut dests = vec![0u16];
+        let mut vis = [0u64; 128];
         let points = memchr::memchr_iter(b'9', b);
-        return points.fold(0u32, |ans, i| {
-            dests.clear();
+        return points.fold(0u32, |mut ans, i| {
             for dir9 in 0..4 {
                 let loc8 = i.wrapping_add(*D.get_unchecked(dir9));
                 if loc8 >= bl || *b.get_unchecked(loc8) != b'8' { continue; }
@@ -35,7 +34,9 @@ pub fn part1(s: &str) -> u32 {
                                             for dir1 in 0..4 {
                                                 let loc0 = loc1.wrapping_add(*D.get_unchecked(dir1));
                                                 if loc0 < bl && b[loc0] == b'0' {
-                                                    dests.push(loc0 as u16);
+                                                    // let prev = vis[loc0 >> 6];
+                                                    vis[loc0 >> 6] |= 1 << (loc0 & 63);
+                                                    // ans += (vis[loc0 >> 6] - prev).count_ones();
                                                 }
                                             }
                                         }
@@ -46,9 +47,11 @@ pub fn part1(s: &str) -> u32 {
                     }
                 }
             }
-            dests.sort_unstable();
-            dests.dedup();
-            return ans + dests.len() as u32;
+            for j in 0..80 {
+                ans += vis[j].count_ones();
+                vis[j] = 0;
+            }
+            return ans;
         });
     }
 }
