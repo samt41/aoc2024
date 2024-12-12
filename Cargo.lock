@@ -9,6 +9,7 @@ dependencies = [
  "aoc-runner",
  "aoc-runner-derive",
  "atoi_simd",
+ "intmap",
  "memchr",
 ]
 
@@ -46,6 +47,12 @@ name = "atoi_simd"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4790f9e8961209112beb783d85449b508673cf4a6a419c8449b210743ac4dbe9"
+
+[[package]]
+name = "intmap"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5060f612722cfc63eb553c33984067081a56f3053bf41ed1fdb6defa37986a7"
 
 [[package]]
 name = "itoa"
