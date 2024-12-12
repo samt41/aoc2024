@@ -5,7 +5,13 @@ use intmap::{ IntMap, Entry };
 static mut init: bool = false;
 static mut map1: MaybeUninit<IntMap<u64, u64>> = MaybeUninit::uninit();
 static mut map2: MaybeUninit<IntMap<u64, u64>> = MaybeUninit::uninit();
-unsafe fn _init() {
+unsafe fn _init1() {
+    map1.write(IntMap::with_capacity(512));
+    map2.write(IntMap::with_capacity(512));
+    init = true;
+}
+
+unsafe fn _init2() {
     map1.write(IntMap::with_capacity(4096));
     map2.write(IntMap::with_capacity(4096));
     init = true;
@@ -77,7 +83,7 @@ unsafe fn _loop(iters: u32) -> u64 {
 
 pub fn part1(s: &str) -> u32 {
     unsafe {
-        if !init { _init() }
+        if !init { _init1() }
         let m = map1.assume_init_mut();
         m.clear();
         let b = s.as_bytes();
@@ -100,7 +106,7 @@ pub fn part1(s: &str) -> u32 {
 
 pub fn part2(s: &str) -> u64 {
     unsafe {
-        if !init { _init() }
+        if !init { _init2() }
         let m = map1.assume_init_mut();
         m.clear();
         let b = s.as_bytes();
