@@ -116,18 +116,16 @@ pub fn part1(s: &str) -> u32 {
         let b = s.as_bytes();
         let bl = b.len();
         let mut ptr = 0;
-        let mut buf = [0u8; 64];
+        let mut buf = [0u8; 128];
         let mut buf_target = [0u16; 32];
         let mut ans = 0u32;
-        let mul = u8x8::from_array([10, 1, 10, 1, 10, 1, 10, 1]);
-        let buf_dest = usizex4::from_array([0, 16, 32, 48]);
+        let _buf_idxs = usizex32::from_array([0,64,0,0,0,0,16,80,0,0,0,0,0,0,0,0,0,0,0,0,0,32,96,0,0,0,0,48,112,0,0,0]);
+        let _buf_enable = masksizex32::from_bitmask(0b11000011000000000000011000011);
         while ptr < bl {
             for buf_ptr in 0..16 {
                 ptr += 12;
                 let stuff= u8x32::load_select_unchecked(&b[ptr..ptr + 32], mask8x32::splat(true), u8x32::splat(0));
-                let stuff2 = simd_swizzle!(stuff, [0, 1, 6, 7, 21, 22, 27, 28]) * mul;
-                let stuff4 = simd_swizzle!(stuff2, [0, 2, 4, 6]) + simd_swizzle!(stuff2, [1, 3, 5, 7]) - u8x4::splat(b'0'.wrapping_mul(11));
-                stuff4.scatter_select_unchecked(&mut buf[buf_ptr..], masksizex4::splat(true), buf_dest);
+                stuff.scatter_select_unchecked(&mut buf[buf_ptr..], _buf_enable, _buf_idxs);
                 ptr += 39;
                 let (num1, len) = atoi_simd::parse_any_pos::<u16>(&b[ptr..]).unwrap_unchecked();
                 ptr += len + 4;
@@ -136,7 +134,10 @@ pub fn part1(s: &str) -> u32 {
                 buf_target[buf_ptr] = num1;
                 buf_target[16 + buf_ptr] = num2;
             }
-            ans += calc1(buf.into(), buf_target.into());
+            let word1 = u8x64::load_select_unchecked(&buf[0 ..64 ], mask8x64::splat(true), u8x64::splat(0));
+            let word2 = u8x64::load_select_unchecked(&buf[64..128], mask8x64::splat(true), u8x64::splat(0));
+            let data = word1 * u8x64::splat(10) + word2 - u8x64::splat(b'0'.wrapping_mul(11));
+            ans += calc1(data, buf_target.into());
         }
         return ans;
     }
@@ -218,18 +219,16 @@ pub fn part2(s: &str) -> u64 {
         let b = s.as_bytes();
         let bl = b.len();
         let mut ptr = 0;
-        let mut buf = [0u8; 64];
+        let mut buf = [0u8; 128];
         let mut buf_target = [0u16; 32];
         let mut ans = 0u64;
-        let mul = u8x8::from_array([10, 1, 10, 1, 10, 1, 10, 1]);
-        let buf_dest = usizex4::from_array([0, 16, 32, 48]);
+        let _buf_idxs = usizex32::from_array([0,64,0,0,0,0,16,80,0,0,0,0,0,0,0,0,0,0,0,0,0,32,96,0,0,0,0,48,112,0,0,0]);
+        let _buf_enable = masksizex32::from_bitmask(0b11000011000000000000011000011);
         while ptr < bl {
             for buf_ptr in 0..16 {
                 ptr += 12;
                 let stuff= u8x32::load_select_unchecked(&b[ptr..ptr + 32], mask8x32::splat(true), u8x32::splat(0));
-                let stuff2 = simd_swizzle!(stuff, [0, 1, 6, 7, 21, 22, 27, 28]) * mul;
-                let stuff4 = simd_swizzle!(stuff2, [0, 2, 4, 6]) + simd_swizzle!(stuff2, [1, 3, 5, 7]) - u8x4::splat(b'0'.wrapping_mul(11));
-                stuff4.scatter_select_unchecked(&mut buf[buf_ptr..], masksizex4::splat(true), buf_dest);
+                stuff.scatter_select_unchecked(&mut buf[buf_ptr..], _buf_enable, _buf_idxs);
                 ptr += 39;
                 let (num1, len) = atoi_simd::parse_any_pos::<u16>(&b[ptr..]).unwrap_unchecked();
                 ptr += len + 4;
@@ -238,7 +237,10 @@ pub fn part2(s: &str) -> u64 {
                 buf_target[buf_ptr] = num1;
                 buf_target[16 + buf_ptr] = num2;
             }
-            ans += calc2(buf.into(), buf_target.into());
+            let word1 = u8x64::load_select_unchecked(&buf[0 ..64 ], mask8x64::splat(true), u8x64::splat(0));
+            let word2 = u8x64::load_select_unchecked(&buf[64..128], mask8x64::splat(true), u8x64::splat(0));
+            let data = word1 * u8x64::splat(10) + word2 - u8x64::splat(b'0'.wrapping_mul(11));
+            ans += calc2(data, buf_target.into());
         }
         return ans;
     }
