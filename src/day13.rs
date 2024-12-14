@@ -39,8 +39,7 @@ static GCD: [GcdObj; 10000] = {
 
 unsafe fn calc1(data: u8x64, targets: u16x32) -> u32 {
     let zeros = i32x16::splat(0);
-    #[cfg(debug_assertions)]
-    let ones = i32x16::splat(1);
+    let bignum = i32x16::splat(i32::MAX);
     let hundredsu = u32x16::splat(100);
     let x1 = data.resize::<16>(0).cast::<i32>();
     let y1 = data.rotate_elements_left::<16>().resize::<16>(0).cast::<i32>();
@@ -50,18 +49,13 @@ unsafe fn calc1(data: u8x64, targets: u16x32) -> u32 {
     let Y = targets.rotate_elements_left::<16>().resize::<16>(0).cast::<i32>();
     let det = x1 * y2 - x2 * y1;
     let sol1 = det.simd_ne(zeros);
+    let det_clean = simd_select(sol1.to_int(), det, bignum);
     // unique solution
     let solA = X * y2 - Y * x2;
     let solB = Y * x1 - X * y1;
-    // can we just unsafe divide by 0? H
-    #[cfg(not(debug_assertions))]
-    let A_int = solA / det;
-    #[cfg(not(debug_assertions))]
-    let B_int = solB / det;
-    #[cfg(debug_assertions)]
-    let A_int = solA / simd_select(sol1.to_int(), det, ones);
-    #[cfg(debug_assertions)]
-    let B_int = solB / simd_select(sol1.to_int(), det, ones);
+
+    let A_int = solA / det_clean;
+    let B_int = solB / det_clean;
     let sol1_is_integer = (A_int * det).simd_eq(solA) & (B_int * det).simd_eq(solB);
     let sol1_in_range = A_int.cast::<u32>().simd_le(hundredsu) & B_int.cast::<u32>().simd_le(hundredsu);
     let sol1_valid = (sol1_is_integer & sol1_in_range).to_int();
@@ -142,8 +136,7 @@ pub fn part1(s: &str) -> u32 {
 
 unsafe fn calc2(data: u8x64, _targets: u16x32) -> u64 {
     let zeros = i64x16::splat(0);
-    #[cfg(debug_assertions)]
-    let ones = i64x16::splat(1);
+    let bignum = i64x16::splat(i64::MAX);
     let targets = _targets.cast::<i64>() + i64x32::splat(10000000000000);
     let x1 = data.resize::<16>(0).cast::<i64>();
     let y1 = data.rotate_elements_left::<16>().resize::<16>(0).cast::<i64>();
@@ -154,18 +147,13 @@ unsafe fn calc2(data: u8x64, _targets: u16x32) -> u64 {
 
     let det = x1 * y2 - x2 * y1;
     let sol1 = det.simd_ne(zeros);
+    let det_clean = simd_select(sol1.to_int(), det, bignum);
     // unique solution
     let solA = X * y2 - Y * x2;
     let solB = Y * x1 - X * y1;
 
-    #[cfg(not(debug_assertions))]
-    let A_int = solA / det;
-    #[cfg(not(debug_assertions))]
-    let B_int = solB / det;
-    #[cfg(debug_assertions)]
-    let A_int = solA / simd_select(sol1.to_int(), det, ones);
-    #[cfg(debug_assertions)]
-    let B_int = solB / simd_select(sol1.to_int(), det, ones);
+    let A_int = solA / det_clean;
+    let B_int = solB / det_clean;
     let sol1_valid = ((A_int * det).simd_eq(solA) & (B_int * det).simd_eq(solB)).to_int();
 
     let A1 = simd_select(sol1_valid, A_int, zeros);
