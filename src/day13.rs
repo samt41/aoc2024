@@ -4,8 +4,8 @@ use std::intrinsics::simd::simd_select;
 #[derive(Clone, Copy)]
 struct GcdObj {
     gcd: u8,
-    A: u8,
-    B: u8,
+    A: i8,
+    B: i8,
     _pad: u8
 }
 
@@ -19,7 +19,7 @@ const fn build_gcd(a: i8, b: i8, x: &mut i8, y: &mut i8) -> i8 {
     let mut y1: i8 = 0;
     let d: i8 = build_gcd(b, a % b, &mut x1, &mut y1);
     *x = y1;
-    *y = x1 - y1 * (a / b);
+    *y = (x1 as i16 - y1 as i16 * (a / b) as i16) as i8;
     return d;
 }
 
@@ -29,9 +29,9 @@ static GCD: [GcdObj; 10000] = {
     while i < 10000 {
         let mut x = 0i8;
         let mut y = 0i8;
-        arr[i].gcd = build_gcd((i as u8 / 100) as i8, (i as u8 % 100) as i8, &mut x, &mut y) as u8;
-        arr[i].A = x as u8;
-        arr[i].B = y as u8;
+        arr[i].gcd = build_gcd((i / 100) as i8, (i % 100) as i8, &mut x, &mut y) as u8;
+        arr[i].A = x;
+        arr[i].B = y;
         i += 1;
     }
     arr
@@ -76,6 +76,7 @@ unsafe fn calc1(data: u8x64, targets: u16x32) -> u32 {
     }
     // no solution
     let sol0 = (x1 * Y - y1 * X).simd_ne(zeros);
+
     // infinite solutions (collinear)
     let mut solinf = (!sol0 & !sol1).to_bitmask();
     if solinf == 0 { return ans; }
@@ -83,25 +84,21 @@ unsafe fn calc1(data: u8x64, targets: u16x32) -> u32 {
         // disaster.
         while solinf != 0 {
             let idx = solinf.trailing_zeros() as usize;
-            // println!("Trying {idx}");
             let x1_ = x1[idx];
             let x2_ = x2[idx];
             let X_ = X[idx];
             
             let gcd_ = GCD[(x1_ * 100 + x2_) as usize];
             let gcd = gcd_.gcd as i32;
-            // println!("x1: {x1_}, x2: {x2_}, y1: {}, y2: {}, X:{X_}, Y:{}", y1[idx], y2[idx], Y[idx]);
             let div_ = X_ / gcd;
-            // let mod_ = X_ % gcd;
-            // if mod_ == 0, panic and cry.
             let partXA = gcd_.A as i32 * div_;
             let partXB = gcd_.B as i32 * div_;
             let sclA = x2_ / gcd;
             let sclB = x1_ / gcd;
-            let k: i32 = if x1_ >= x2_ * 3 { (partXB / sclB) as i32 } // Maximize A
-                else { -((partXA / sclA) as i32) }; // Maximize B
-            let A_final = partXA as i32 + k * sclA as i32;
-            let B_final = partXB as i32 - k * sclB as i32;
+            let k = if x1_ >= x2_ * 3 { (partXB - partXB.rem_euclid(sclB)) / sclB } // Maximize A
+                else { -(partXA - partXA.rem_euclid(sclA)) / sclA }; // Maximize B
+            let A_final = partXA + k * sclA;
+            let B_final = partXB - k * sclB;
             if (A_final as u32) <= 100 && (B_final as u32) <= 100 {
                 ans += (A_final * 3 + B_final) as u32;
             }
@@ -181,6 +178,7 @@ unsafe fn calc2(data: u8x64, _targets: u16x32) -> u64 {
     }
     // no solution
     let sol0 = (x1 * Y - y1 * X).simd_ne(zeros);
+
     // infinite solutions (collinear)
     let mut solinf = (!sol0 & !sol1).to_bitmask();
     if solinf == 0 { return ans; }
@@ -188,25 +186,21 @@ unsafe fn calc2(data: u8x64, _targets: u16x32) -> u64 {
         // disaster.
         while solinf != 0 {
             let idx = solinf.trailing_zeros() as usize;
-            // println!("Trying {idx}");
             let x1_ = x1[idx];
             let x2_ = x2[idx];
             let X_ = X[idx];
             
             let gcd_ = GCD[(x1_ * 100 + x2_) as usize];
             let gcd = gcd_.gcd as i64;
-            // println!("x1: {x1_}, x2: {x2_}, y1: {}, y2: {}, X:{X_}, Y:{}", y1[idx], y2[idx], Y[idx]);
             let div_ = X_ / gcd;
-            // let mod_ = X_ % gcd;
-            // if mod_ == 0, panic and cry.
             let partXA = gcd_.A as i64 * div_;
             let partXB = gcd_.B as i64 * div_;
             let sclA = x2_ / gcd;
             let sclB = x1_ / gcd;
-            let k: i64 = if x1_ >= x2_ * 3 { (partXB / sclB) as i64 } // Maximize A
-                else { -((partXA / sclA) as i64) }; // Maximize B
-            let A_final = partXA as i64 + k * sclA as i64;
-            let B_final = partXB as i64 - k * sclB as i64;
+            let k = if x1_ >= x2_ * 3 { (partXB - partXB.rem_euclid(sclB)) / sclB } // Maximize A
+                else { -(partXA - partXA.rem_euclid(sclA)) / sclA }; // Maximize B
+            let A_final = partXA + k * sclA;
+            let B_final = partXB - k * sclB;
             ans += (A_final * 3 + B_final) as u64;
             solinf &= solinf - 1;
         }
