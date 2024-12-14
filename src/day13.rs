@@ -110,13 +110,13 @@ pub fn part1(s: &str) -> u32 {
         let mut buf = [0u8; 128];
         let mut buf_target = [0u16; 32];
         let mut ans = 0u32;
-        let _buf_idxs = usizex32::from_array([0,64,0,0,0,0,16,80,0,0,0,0,0,0,0,0,0,0,0,0,0,32,96,0,0,0,0,48,112,0,0,0]);
-        let _buf_enable = masksizex32::from_bitmask(0b11000011000000000000011000011);
+        let _load_idxs = usizex8::from_array([0, 1, 6, 7, 21, 22, 27, 28]);
+        let _buf_idxs = usizex8::from_array([0,64,16,80,32,96,48,112]);
         while ptr < bl {
             for buf_ptr in 0..16 {
                 ptr += 12;
-                let stuff= u8x32::load_select_unchecked(&b[ptr..ptr + 32], mask8x32::splat(true), u8x32::splat(0));
-                stuff.scatter_select_unchecked(&mut buf[buf_ptr..], _buf_enable, _buf_idxs);
+                let stuff = u8x8::gather_select_unchecked(&b[ptr..ptr + 32], masksizex8::splat(true), _load_idxs, u8x8::splat(0));
+                stuff.scatter_select_unchecked(&mut buf[buf_ptr..], masksizex8::splat(true), _buf_idxs);
                 ptr += 39;
                 let (num1, len) = atoi_simd::parse_any_pos::<u16>(&b[ptr..]).unwrap_unchecked();
                 ptr += len + 4;
@@ -204,13 +204,13 @@ pub fn part2(s: &str) -> u64 {
         let mut buf = [0u8; 128];
         let mut buf_target = [0u16; 32];
         let mut ans = 0u64;
-        let _buf_idxs = usizex32::from_array([0,64,0,0,0,0,16,80,0,0,0,0,0,0,0,0,0,0,0,0,0,32,96,0,0,0,0,48,112,0,0,0]);
-        let _buf_enable = masksizex32::from_bitmask(0b11000011000000000000011000011);
+        let _load_idxs = usizex8::from_array([0, 1, 6, 7, 21, 22, 27, 28]);
+        let _buf_idxs = usizex8::from_array([0,64,16,80,32,96,48,112]);
         while ptr < bl {
             for buf_ptr in 0..16 {
                 ptr += 12;
-                let stuff= u8x32::load_select_unchecked(&b[ptr..ptr + 32], mask8x32::splat(true), u8x32::splat(0));
-                stuff.scatter_select_unchecked(&mut buf[buf_ptr..], _buf_enable, _buf_idxs);
+                let stuff = u8x8::gather_select_unchecked(&b[ptr..ptr + 32], masksizex8::splat(true), _load_idxs, u8x8::splat(0));
+                stuff.scatter_select_unchecked(&mut buf[buf_ptr..], masksizex8::splat(true), _buf_idxs);
                 ptr += 39;
                 let (num1, len) = atoi_simd::parse_any_pos::<u16>(&b[ptr..]).unwrap_unchecked();
                 ptr += len + 4;
