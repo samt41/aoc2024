@@ -1,4 +1,6 @@
+#![allow(internal_features)]
 #![feature(portable_simd)]
+#![feature(core_intrinsics)]
 
 extern crate aoc_runner;
 
@@ -11,6 +13,9 @@ pub mod day6;
 pub mod day7;
 pub mod day8;
 pub mod day10;
+#[allow(static_mut_refs, non_upper_case_globals)]
 pub mod day11;
+#[allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]
+pub mod day13;
 
 aoc_lib!{ year = 2024 }
