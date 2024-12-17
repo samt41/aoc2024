@@ -24,18 +24,20 @@ pub fn part1(s: &str) -> String {
         }
         let mut ptrp = ptr;
         while ptrp < bl {
-            let ins = b[ptrp] - b'0';
-            let item = b[ptrp + 2] - b'0';
-            let combo_lit = if (1 << ins) & (0b11100101) != 0 { *base_reg.wrapping_add(item as usize) } else { item as u32 };
+            let ins = b.get_unchecked(ptrp) - b'0';
+            let item = b.get_unchecked(ptrp + 2) - b'0';
+            let combo = *base_reg.wrapping_add(item as usize);
             ptrp += 4;
             match ins {
-                0 => *regA >>= combo_lit,
-                1 => *regB ^= combo_lit,
-                2 => *regB = combo_lit & 0b111,
-                3 => if *regA != 0 { ptrp = ptr + (combo_lit << 2) as usize },
+                0 => *regA >>= combo,
+                1 => *regB ^= item as u32,
+                2 => *regB = combo & 0b111,
+                3 => if *regA != 0 { ptrp = ptr + (item << 2) as usize },
                 4 => *regB ^= *regC,
-                5 => output.push(((combo_lit as u16 & 0b111) + b'0' as u16) | (b',' as u16) << 8),
-                v => *base_reg_mut.wrapping_add(v as usize - 1) = *regA >> combo_lit,
+                5 => output.push(((combo as u16 & 0b111) + b'0' as u16) | (b',' as u16) << 8),
+                6 => *regB = *regA >> combo,
+                7 => *regC = *regA >> combo,
+                _ => break,
             }
         }
         {
