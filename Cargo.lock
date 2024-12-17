@@ -10,6 +10,7 @@ dependencies = [
  "aoc-runner-derive",
  "atoi_simd",
  "intmap",
+ "itoa",
  "memchr",
 ]
 
