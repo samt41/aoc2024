@@ -1,18 +1,14 @@
-use std::io::Write;
-use std::str;
-
 pub fn part1(s: &str) -> String {
     unsafe {
         let b = s.as_bytes();
         let bl = b.len();
-        let mut output = vec![0u8; 0];
+        let mut output = vec![0u16; 0];
         let mut reg = [0, 1, 2, 3, 0u32, 0u32, 0u32];
         let base_reg = reg.as_ptr();
         let base_reg_mut = reg.as_mut_ptr();
         let (regA, regB, regC) = 
             (base_reg_mut.wrapping_add(4), base_reg_mut.wrapping_add(5), base_reg_mut.wrapping_add(6));
         let mut ptr: usize;
-        let mut itoabuf = itoa::Buffer::new();
         {
             let mut x;
             ptr = memchr::memchr(b':', b).unwrap_unchecked() + 2;
@@ -38,17 +34,18 @@ pub fn part1(s: &str) -> String {
                 2 => *regB = combo_lit & 0b111,
                 3 => if *regA != 0 { ptrp = ptr + (combo_lit << 2) as usize },
                 4 => *regB ^= *regC,
-                5 => {
-                    output.write_all(itoabuf.format(combo_lit & 0b111).as_bytes()).unwrap_unchecked();
-                    output.push(b',');
-                },
+                5 => output.push(((combo_lit as u16 & 0b111) + b'0' as u16) | (b',' as u16) << 8),
                 v => *base_reg_mut.wrapping_add(v as usize - 1) = *regA >> combo_lit,
             }
         }
         {
-            output.pop();
+            let l = output.len();
+            let cap = output.capacity();
+            let pt = output.as_mut_ptr();
+            let tempv = Vec::from_raw_parts(pt as *mut u8, (l << 1) - 1, cap);
+            std::mem::forget(output);
+            return String::from_utf8_unchecked(tempv);
         }
-        return String::from_utf8(output).unwrap_unchecked();
     }
 }
 
