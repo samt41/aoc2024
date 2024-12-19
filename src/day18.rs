@@ -1,15 +1,3 @@
-use std::simd::{prelude::*, ToBytes};
-
-const SHUF: [[[u8; 8]; 2]; 2] = [
-    [
-        [7, 0, 7, 7, 7, 2, 7, 7],
-        [7, 0, 7, 7, 7, 3, 7, 2],
-    ],
-    [
-        [7, 1, 7, 0, 7, 3, 7, 7],
-        [7, 1, 7, 0, 7, 4, 7, 3],
-    ]
-];
 const SIZE_REAL: usize = 71;
 const SIZE_REAL16: u16 = SIZE_REAL as u16;
 const SIZE_LOGICAL: usize = 128;
@@ -120,29 +108,30 @@ pub fn part2(s: &str) -> &str {
         let b = s.as_bytes();
         let mut grid = [0u16; SIZE_REAL * SIZE_REAL];
         let mut rank = [0u8; SIZE_REAL * SIZE_REAL];
-        let mut sep = memchr::memchr2_iter(b'\n', b',', b);
         {
-            let mut last_pos = -1;
+            let mut ptr = 0;
+            let mut last_ptr;
             loop {
-                let pos1 = sep.next().unwrap_unchecked() as i32;
-                let first_idx = pos1 - last_pos - 2;
-                let pos2 = sep.next().unwrap_unchecked() as i32;
-                let second_idx = pos2 - pos1 - 2;
-
-                let mut line = u8x8::load_select_unchecked(&b[(last_pos+1) as usize..pos2 as usize],
-                    mask8x8::from_bitmask((1 << (pos2 - last_pos - 1)) - 1), u8x8::splat(b'0'));
-                line -= u8x8::splat(b'0');
-                let mut s = u16x4::from_be_bytes(
-                    line.swizzle_dyn(u8x8::from_array(
-                        SHUF[first_idx as usize][second_idx as usize]))
-                );
-                let x = s[0] + s[1] * 10;
-                s *= u16x4::from_array([1, 10, SIZE_REAL16, SIZE_REAL16 * 10]);
-                let loc = s.reduce_sum() as usize;
+                last_ptr = ptr;
+                let mut num1 = (b[ptr] - b'0') as u16;
+                ptr += 1;
+                if b[ptr] != b',' {
+                    num1 = num1 * 10 + (b[ptr] - b'0') as u16;
+                    ptr += 1;
+                }
+                ptr += 1;
+                let mut num2 = (b[ptr] - b'0') as u16;
+                ptr += 1;
+                if b[ptr] != b'\n' {
+                    num2 = num2 * 10 + (b[ptr] - b'0') as u16;
+                    ptr += 1;
+                }
+                ptr += 1;
+                let loc = (num1 + num2 * SIZE_REAL16) as usize;
                 let bottom = loc as u16 >= SIZE_REAL16 * (SIZE_REAL16 - 1);
                 let top = loc < SIZE_REAL;
-                let left = x < 1;
-                let right = x >= SIZE_REAL16 - 1;
+                let left = num1 < 1;
+                let right = num1 >= SIZE_REAL16 - 1;
 
                 rank[loc] |= (((top | right) as u8) << 1) | (left | bottom) as u8;
                 grid[loc] = loc as u16;
@@ -450,13 +439,11 @@ pub fn part2(s: &str) -> &str {
                         *grid.get_unchecked_mut(*find_stack.get_unchecked(p) as usize) = ao as u16;
                     }
                 }
-                last_pos = pos2;
             }
-            last_pos += 1;
             return &s[
-                last_pos as usize..
-                last_pos as usize +
-                memchr::memchr(b'\n', &b[last_pos as usize..]).unwrap_unchecked()
+                last_ptr as usize..
+                last_ptr as usize +
+                memchr::memchr(b'\n', &b[last_ptr as usize..]).unwrap_unchecked()
             ];
         }
     }
