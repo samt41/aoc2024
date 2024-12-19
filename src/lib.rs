@@ -20,5 +20,6 @@ pub mod day13;
 pub mod day14;
 #[allow(non_snake_case)]
 pub mod day17;
+pub mod day18;
 
 aoc_lib!{ year = 2024 }
