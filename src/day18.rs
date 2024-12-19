@@ -121,7 +121,7 @@ unsafe fn find(parent: &mut [u16; SIZE_REAL * SIZE_REAL], node: usize) -> usize 
         stack[ptr] = curr;
         ptr += 1;
         let nxt = *parent.get_unchecked(curr as usize);
-        if nxt == curr || nxt == 0 {
+        if nxt == curr {
             break;
         }
         curr = nxt;
@@ -131,28 +131,6 @@ unsafe fn find(parent: &mut [u16; SIZE_REAL * SIZE_REAL], node: usize) -> usize 
         *parent.get_unchecked_mut(stack[p] as usize) = first as u16;
     }
     return first as usize;
-}
-
-unsafe fn merge(mut parent: &mut [u16; SIZE_REAL * SIZE_REAL], rank: &mut [u8; SIZE_REAL * SIZE_REAL],
-    u: usize, v: usize) -> bool {
-    let au = find(&mut parent, u);
-    let av = find(&mut parent, v);
-    if au == av { return false; }
-    let ptr = rank.as_mut_ptr();
-    let ru = ptr.wrapping_add(au);
-    let rv = ptr.wrapping_add(av);
-    *ru |= *rv & 0b11;
-    *rv |= *ru & 0b11;
-    if *rv & 0b11 == 3 { return true; }
-    if *ru > *rv {
-        parent[av] = au as u16;
-    } else if *ru < *rv {
-        parent[au] = av as u16;
-    } else {
-        parent[av] = au as u16;
-        *ru += 4;
-    }
-    return false;
 }
 
 pub fn part2(s: &str) -> &str {
@@ -186,48 +164,180 @@ pub fn part2(s: &str) -> &str {
 
                 rank[loc] |= (((top | right) as u8) << 1) | (left | bottom) as u8;
                 grid[loc] = loc as u16;
+                let ptr = grid.as_ptr().wrapping_add(loc);
+                let rp = rank.as_mut_ptr();
+                let mut ancestor = find(&mut grid, loc);
+                let mut r_anc = rp.wrapping_add(ancestor);
                 if !bottom {
-                    if grid[loc + SIZE_REAL] != 0 {
-                        if merge(&mut grid, &mut rank, loc + SIZE_REAL, loc) {
-                            break;
+                    if *ptr.wrapping_add(SIZE_REAL) != 0 {
+                        let other = loc + SIZE_REAL;
+                        let ao = find(&mut grid, other);
+                        if ao != ancestor {
+                            let ro = rp.wrapping_add(ao);
+                            let comb = (*ro | *r_anc) & 0b11;
+                            if comb == 3 { break; }
+                            *ro |= comb;
+                            *r_anc |= comb;
+                            if *r_anc >= *ro {
+                                grid[ao] = ancestor as u16;
+                                if *r_anc == *ro {
+                                    *r_anc += 4;
+                                }
+                            } else {
+                                grid[ancestor] = ao as u16;
+                                ancestor = ao;
+                                r_anc = ro;
+                            }
                         }
                     }
-                    if !left && grid[loc - 1 + SIZE_REAL] != 0 {
-                        if merge(&mut grid, &mut rank, loc - 1 + SIZE_REAL, loc) {
-                            break;
+                    if !left && *ptr.wrapping_add(SIZE_REAL - 1) != 0 {
+                        let other = loc + SIZE_REAL - 1;
+                        let ao = find(&mut grid, other);
+                        if ao != ancestor {
+                            let ro = rp.wrapping_add(ao);
+                            let comb = (*ro | *r_anc) & 0b11;
+                            if comb == 3 { break; }
+                            *ro |= comb;
+                            *r_anc |= comb;
+                            if *r_anc >= *ro {
+                                grid[ao] = ancestor as u16;
+                                if *r_anc == *ro {
+                                    *r_anc += 4;
+                                }
+                            } else {
+                                grid[ancestor] = ao as u16;
+                                ancestor = ao;
+                                r_anc = ro;
+                            }
                         }
                     }
-                    if !right && grid[loc + 1 + SIZE_REAL] != 0 {
-                        if merge(&mut grid, &mut rank, loc + 1 + SIZE_REAL, loc) {
-                            break;
+                    if !right && *ptr.wrapping_add(SIZE_REAL + 1) != 0 {
+                        let other = loc + SIZE_REAL + 1;
+                        let ao = find(&mut grid, other);
+                        if ao != ancestor {
+                            let ro = rp.wrapping_add(ao);
+                            let comb = (*ro | *r_anc) & 0b11;
+                            if comb == 3 { break; }
+                            *ro |= comb;
+                            *r_anc |= comb;
+                            if *r_anc >= *ro {
+                                grid[ao] = ancestor as u16;
+                                if *r_anc == *ro {
+                                    *r_anc += 4;
+                                }
+                            } else {
+                                grid[ancestor] = ao as u16;
+                                ancestor = ao;
+                                r_anc = ro;
+                            }
                         }
                     }
                 }
                 if !top {
-                    if grid[loc - SIZE_REAL] != 0 {
-                        if merge(&mut grid, &mut rank, loc - SIZE_REAL, loc) {
-                            break;
+                    if *ptr.wrapping_sub(SIZE_REAL) != 0 {
+                        let other = loc - SIZE_REAL;
+                        let ao = find(&mut grid, other);
+                        if ao != ancestor {
+                            let ro = rp.wrapping_add(ao);
+                            let comb = (*ro | *r_anc) & 0b11;
+                            if comb == 3 { break; }
+                            *ro |= comb;
+                            *r_anc |= comb;
+                            if *r_anc >= *ro {
+                                grid[ao] = ancestor as u16;
+                                if *r_anc == *ro {
+                                    *r_anc += 4;
+                                }
+                            } else {
+                                grid[ancestor] = ao as u16;
+                                ancestor = ao;
+                                r_anc = ro;
+                            }
                         }
                     }
-                    if !left && grid[loc - 1 - SIZE_REAL] != 0 {
-                        if merge(&mut grid, &mut rank, loc - 1 - SIZE_REAL, loc) {
-                            break;
+                    if !left && *ptr.wrapping_sub(SIZE_REAL + 1) != 0 {
+                        let other = loc - SIZE_REAL - 1;
+                        let ao = find(&mut grid, other);
+                        if ao != ancestor {
+                            let ro = rp.wrapping_add(ao);
+                            let comb = (*ro | *r_anc) & 0b11;
+                            if comb == 3 { break; }
+                            *ro |= comb;
+                            *r_anc |= comb;
+                            if *r_anc >= *ro {
+                                grid[ao] = ancestor as u16;
+                                if *r_anc == *ro {
+                                    *r_anc += 4;
+                                }
+                            } else {
+                                grid[ancestor] = ao as u16;
+                                ancestor = ao;
+                                r_anc = ro;
+                            }
                         }
                     }
-                    if !right && grid[loc + 1 - SIZE_REAL] != 0 {
-                        if merge(&mut grid, &mut rank, loc + 1 - SIZE_REAL, loc) {
-                            break;
+                    if !right && *ptr.wrapping_sub(SIZE_REAL - 1) != 0 {
+                        let other = loc - SIZE_REAL + 1;
+                        let ao = find(&mut grid, other);
+                        if ao != ancestor {
+                            let ro = rp.wrapping_add(ao);
+                            let comb = (*ro | *r_anc) & 0b11;
+                            if comb == 3 { break; }
+                            *ro |= comb;
+                            *r_anc |= comb;
+                            if *r_anc >= *ro {
+                                grid[ao] = ancestor as u16;
+                                if *r_anc == *ro {
+                                    *r_anc += 4;
+                                }
+                            } else {
+                                grid[ancestor] = ao as u16;
+                                ancestor = ao;
+                                r_anc = ro;
+                            }
                         }
                     }
                 }
-                if !left && grid[loc - 1] != 0 {
-                    if merge(&mut grid, &mut rank, loc - 1, loc) {
-                        break;
-                    }            
+                if !left && *ptr.wrapping_sub(1) != 0 {
+                    let other = loc - 1;
+                    let ao = find(&mut grid, other);
+                    if ao != ancestor {
+                        let ro = rp.wrapping_add(ao);
+                        let comb = (*ro | *r_anc) & 0b11;
+                        if comb == 3 { break; }
+                        *ro |= comb;
+                        *r_anc |= comb;
+                        if *r_anc >= *ro {
+                            grid[ao] = ancestor as u16;
+                            if *r_anc == *ro {
+                                *r_anc += 4;
+                            }
+                        } else {
+                            grid[ancestor] = ao as u16;
+                            ancestor = ao;
+                            r_anc = ro;
+                        }
+                    }  
                 }
-                if !right && grid[loc + 1] != 0 {
-                    if merge(&mut grid, &mut rank, loc + 1, loc) {
-                        break;
+                if !right && *ptr.wrapping_add(1) != 0 {
+                    let other = loc + 1;
+                    let ao = find(&mut grid, other);
+                    if ao != ancestor {
+                        let ro = rp.wrapping_add(ao);
+                        let comb = (*ro | *r_anc) & 0b11;
+                        if comb == 3 { break; }
+                        *ro |= comb;
+                        *r_anc |= comb;
+                        if *r_anc >= *ro {
+                            grid[ao] = ancestor as u16;
+                            if *r_anc == *ro {
+                                *r_anc += 4;
+                            }
+                        } else {
+                            grid[ancestor] = ao as u16;
+                            // ancestor = ao;
+                            // r_anc = ro;
+                        }
                     }
                 }
                 last_pos = pos2;
