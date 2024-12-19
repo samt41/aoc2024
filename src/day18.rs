@@ -178,51 +178,55 @@ pub fn part2(s: &str) -> &str {
                 );
                 let x = s[0] + s[1] * 10;
                 s *= u16x4::from_array([1, 10, SIZE_REAL16, SIZE_REAL16 * 10]);
-                let loc = s.reduce_sum();
-                let edges =
-                    (((loc >= SIZE_REAL16 * (SIZE_REAL16 - 1)) as u8) << 3) |
-                    (((loc < SIZE_REAL16) as u8) << 2) |
-                    (((x < 1) as u8) << 1) |
-                    ((x >= SIZE_REAL16 - 1) as u8);
-                rank[loc as usize] |= (edges | (edges >> 2)) & 0b11;
-                grid[loc as usize] = loc;
-                if edges & 0b1000 == 0 && grid[(loc + SIZE_REAL16) as usize] != 0 {
-                    if merge(&mut grid, &mut rank, (loc + SIZE_REAL16) as usize, loc as usize) {
-                        break;
+                let loc = s.reduce_sum() as usize;
+                let bottom = loc as u16 >= SIZE_REAL16 * (SIZE_REAL16 - 1);
+                let top = loc < SIZE_REAL;
+                let left = x < 1;
+                let right = x >= SIZE_REAL16 - 1;
+
+                rank[loc] |= (((top | right) as u8) << 1) | (left | bottom) as u8;
+                grid[loc] = loc as u16;
+                if !bottom {
+                    if grid[loc + SIZE_REAL] != 0 {
+                        if merge(&mut grid, &mut rank, loc + SIZE_REAL, loc) {
+                            break;
+                        }
+                    }
+                    if !left && grid[loc - 1 + SIZE_REAL] != 0 {
+                        if merge(&mut grid, &mut rank, loc - 1 + SIZE_REAL, loc) {
+                            break;
+                        }
+                    }
+                    if !right && grid[loc + 1 + SIZE_REAL] != 0 {
+                        if merge(&mut grid, &mut rank, loc + 1 + SIZE_REAL, loc) {
+                            break;
+                        }
                     }
                 }
-                if edges & 0b0100 == 0 && grid[(loc - SIZE_REAL16) as usize] != 0 {
-                    if merge(&mut grid, &mut rank, (loc - SIZE_REAL16) as usize, loc as usize) {
-                        break;
+                if !top {
+                    if grid[loc - SIZE_REAL] != 0 {
+                        if merge(&mut grid, &mut rank, loc - SIZE_REAL, loc) {
+                            break;
+                        }
+                    }
+                    if !left && grid[loc - 1 - SIZE_REAL] != 0 {
+                        if merge(&mut grid, &mut rank, loc - 1 - SIZE_REAL, loc) {
+                            break;
+                        }
+                    }
+                    if !right && grid[loc + 1 - SIZE_REAL] != 0 {
+                        if merge(&mut grid, &mut rank, loc + 1 - SIZE_REAL, loc) {
+                            break;
+                        }
                     }
                 }
-                if edges & 0b0010 == 0 && grid[loc as usize - 1] != 0 {
-                    if merge(&mut grid, &mut rank, loc as usize - 1, loc as usize) {
+                if !left && grid[loc - 1] != 0 {
+                    if merge(&mut grid, &mut rank, loc - 1, loc) {
                         break;
                     }            
                 }
-                if edges & 0b0001 == 0 && grid[loc as usize + 1] != 0 {
-                    if merge(&mut grid, &mut rank, loc as usize + 1, loc as usize) {
-                        break;
-                    }
-                }
-                if edges & 0b1010 == 0 && grid[(loc - 1 + SIZE_REAL16) as usize] != 0 {
-                    if merge(&mut grid, &mut rank, (loc - 1 + SIZE_REAL16) as usize, loc as usize) {
-                        break;
-                    }
-                }
-                if edges & 0b1001 == 0 && grid[(loc + 1 + SIZE_REAL16) as usize] != 0 {
-                    if merge(&mut grid, &mut rank, (loc + 1 + SIZE_REAL16) as usize, loc as usize) {
-                        break;
-                    }
-                }
-                if edges & 0b0110 == 0 && grid[(loc - 1 - SIZE_REAL16) as usize] != 0 {
-                    if merge(&mut grid, &mut rank, (loc - 1 - SIZE_REAL16) as usize, loc as usize) {
-                        break;
-                    }
-                }
-                if edges & 0b0101 == 0 && grid[(loc + 1 - SIZE_REAL16) as usize] != 0 {
-                    if merge(&mut grid, &mut rank, (loc + 1 - SIZE_REAL16) as usize, loc as usize) {
+                if !right && grid[loc + 1] != 0 {
+                    if merge(&mut grid, &mut rank, loc + 1, loc) {
                         break;
                     }
                 }
