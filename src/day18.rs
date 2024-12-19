@@ -19,25 +19,26 @@ pub fn part1(s: &str) -> u16 {
     unsafe {
         let b = s.as_bytes();
         let mut grid = [0u8; (SIZE_LOGICAL+1)*(SIZE_REAL+1)];
-        let mut sep = memchr::memchr2_iter(b'\n', b',', b);
         {
-            let mut last_pos = -1;
             let mut num_lines = 0;
+            let mut ptr = 0;
             while num_lines < 1024 {
-                let pos1 = sep.next().unwrap_unchecked() as i32;
-                let first_idx = pos1 - last_pos - 2;
-                let pos2 = sep.next().unwrap_unchecked() as i32;
-                let second_idx = pos2 - pos1 - 2;
-                let mut line = u8x8::load_select_unchecked(&b[(last_pos+1) as usize..pos2 as usize],
-                    mask8x8::from_bitmask((1 << (pos2 - last_pos - 1)) - 1), u8x8::splat(b'0'));
-                line -= u8x8::splat(b'0');
-                let mut s = u16x4::from_be_bytes(
-                    line.swizzle_dyn(u8x8::from_array(
-                        SHUF[first_idx as usize][second_idx as usize]))
-                );
-                s *= u16x4::from_array([1, 10, SIZE_LOGICAL16, SIZE_LOGICAL16 * 10]);
-                grid[s.reduce_sum() as usize] |= 4;
-                last_pos = pos2;
+                let mut num1 = (b[ptr] - b'0') as u16;
+                ptr += 1;
+                if b[ptr] != b',' {
+                    num1 = num1 * 10 + (b[ptr] - b'0') as u16;
+                    ptr += 1;
+                }
+                ptr += 1;
+                let mut num2 = (b[ptr] - b'0') as u16;
+                ptr += 1;
+                if b[ptr] != b'\n' {
+                    num2 = num2 * 10 + (b[ptr] - b'0') as u16;
+                    ptr += 1;
+                }
+                ptr += 1;
+                let pos = num1 + num2 * SIZE_LOGICAL16;
+                grid[pos as usize] |= 4;
                 num_lines += 1;
             }
         }
