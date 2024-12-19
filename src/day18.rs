@@ -113,28 +113,9 @@ pub fn part1(s: &str) -> u16 {
     }
 }
 
-unsafe fn find(parent: &mut [u16; SIZE_REAL * SIZE_REAL], node: usize) -> usize {
-    let mut stack = [0u16; 64];
-    let mut curr = node as u16;
-    let mut ptr = 0;
-    loop {
-        stack[ptr] = curr;
-        ptr += 1;
-        let nxt = *parent.get_unchecked(curr as usize);
-        if nxt == curr {
-            break;
-        }
-        curr = nxt;
-    }
-    let first = curr;
-    for p in 0..ptr {
-        *parent.get_unchecked_mut(stack[p] as usize) = first as u16;
-    }
-    return first as usize;
-}
-
 pub fn part2(s: &str) -> &str {
     unsafe {
+        let mut find_stack = [0u16; 64];
         let b = s.as_bytes();
         let mut grid = [0u16; SIZE_REAL * SIZE_REAL];
         let mut rank = [0u8; SIZE_REAL * SIZE_REAL];
@@ -166,178 +147,306 @@ pub fn part2(s: &str) -> &str {
                 grid[loc] = loc as u16;
                 let ptr = grid.as_ptr().wrapping_add(loc);
                 let rp = rank.as_mut_ptr();
-                let mut ancestor = find(&mut grid, loc);
+                let mut ancestor;
+                {
+                    let mut curr = loc as u16;
+                    let mut ptr = 0;
+                    loop {
+                        *find_stack.get_unchecked_mut(ptr) = curr;
+                        ptr += 1;
+                        let nxt = *grid.get_unchecked(curr as usize);
+                        if nxt == curr { break; }
+                        curr = nxt;
+                    }
+                    let first = curr;
+                    for p in 0..ptr {
+                        *grid.get_unchecked_mut(*find_stack.get_unchecked(p) as usize) = first as u16;
+                    }
+                    ancestor = first as usize;
+                }
                 let mut r_anc = rp.wrapping_add(ancestor);
                 if !bottom {
                     if *ptr.wrapping_add(SIZE_REAL) != 0 {
-                        let other = loc + SIZE_REAL;
-                        let ao = find(&mut grid, other);
+                        let mut ao;
+                        let mut find_ptr = 0;
+                        {
+                            let mut curr = loc as u16 + SIZE_REAL16;
+                            while *grid.get_unchecked(curr as usize) != curr {
+                                *find_stack.get_unchecked_mut(find_ptr) = curr;
+                                find_ptr += 1;
+                                curr = *grid.get_unchecked(curr as usize);
+                            }
+                            ao = curr as usize;
+                        }
                         if ao != ancestor {
                             let ro = rp.wrapping_add(ao);
                             let comb = (*ro | *r_anc) & 0b11;
                             if comb == 3 { break; }
                             *ro |= comb;
                             *r_anc |= comb;
-                            if *r_anc >= *ro {
-                                grid[ao] = ancestor as u16;
-                                if *r_anc == *ro {
-                                    *r_anc += 4;
-                                }
+                            if *r_anc == *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                *r_anc += 4;
+                                ao = ancestor;
+                            } else if *r_anc > *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                ao = ancestor;
                             } else {
                                 grid[ancestor] = ao as u16;
                                 ancestor = ao;
                                 r_anc = ro;
                             }
+                        }
+                        for p in 0..find_ptr {
+                            *grid.get_unchecked_mut(*find_stack.get_unchecked(p) as usize) = ao as u16;
                         }
                     }
                     if !left && *ptr.wrapping_add(SIZE_REAL - 1) != 0 {
-                        let other = loc + SIZE_REAL - 1;
-                        let ao = find(&mut grid, other);
+                        let mut ao;
+                        let mut find_ptr = 0;
+                        {
+                            let mut curr = loc as u16 + SIZE_REAL16 - 1;
+                            while *grid.get_unchecked(curr as usize) != curr {
+                                *find_stack.get_unchecked_mut(find_ptr) = curr;
+                                find_ptr += 1;
+                                curr = *grid.get_unchecked(curr as usize);
+                            }
+                            ao = curr as usize;
+                        }
                         if ao != ancestor {
                             let ro = rp.wrapping_add(ao);
                             let comb = (*ro | *r_anc) & 0b11;
                             if comb == 3 { break; }
                             *ro |= comb;
                             *r_anc |= comb;
-                            if *r_anc >= *ro {
-                                grid[ao] = ancestor as u16;
-                                if *r_anc == *ro {
-                                    *r_anc += 4;
-                                }
+                            if *r_anc == *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                *r_anc += 4;
+                                ao = ancestor;
+                            } else if *r_anc > *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                ao = ancestor;
                             } else {
                                 grid[ancestor] = ao as u16;
                                 ancestor = ao;
                                 r_anc = ro;
                             }
                         }
+                        for p in 0..find_ptr {
+                            *grid.get_unchecked_mut(*find_stack.get_unchecked(p) as usize) = ao as u16;
+                        }
                     }
                     if !right && *ptr.wrapping_add(SIZE_REAL + 1) != 0 {
-                        let other = loc + SIZE_REAL + 1;
-                        let ao = find(&mut grid, other);
+                        let mut ao;
+                        let mut find_ptr = 0;
+                        {
+                            let mut curr = loc as u16 + SIZE_REAL16 + 1;
+                            while *grid.get_unchecked(curr as usize) != curr {
+                                *find_stack.get_unchecked_mut(find_ptr) = curr;
+                                find_ptr += 1;
+                                curr = *grid.get_unchecked(curr as usize);
+                            }
+                            ao = curr as usize;
+                        }
                         if ao != ancestor {
                             let ro = rp.wrapping_add(ao);
                             let comb = (*ro | *r_anc) & 0b11;
                             if comb == 3 { break; }
                             *ro |= comb;
                             *r_anc |= comb;
-                            if *r_anc >= *ro {
-                                grid[ao] = ancestor as u16;
-                                if *r_anc == *ro {
-                                    *r_anc += 4;
-                                }
+                            if *r_anc == *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                *r_anc += 4;
+                                ao = ancestor;
+                            } else if *r_anc > *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                ao = ancestor;
                             } else {
                                 grid[ancestor] = ao as u16;
                                 ancestor = ao;
                                 r_anc = ro;
                             }
+                        }
+                        for p in 0..find_ptr {
+                            *grid.get_unchecked_mut(*find_stack.get_unchecked(p) as usize) = ao as u16;
                         }
                     }
                 }
                 if !top {
                     if *ptr.wrapping_sub(SIZE_REAL) != 0 {
-                        let other = loc - SIZE_REAL;
-                        let ao = find(&mut grid, other);
+                        let mut ao;
+                        let mut find_ptr = 0;
+                        {
+                            let mut curr = loc as u16 - SIZE_REAL16;
+                            while *grid.get_unchecked(curr as usize) != curr {
+                                *find_stack.get_unchecked_mut(find_ptr) = curr;
+                                find_ptr += 1;
+                                curr = *grid.get_unchecked(curr as usize);
+                            }
+                            ao = curr as usize;
+                        }
                         if ao != ancestor {
                             let ro = rp.wrapping_add(ao);
                             let comb = (*ro | *r_anc) & 0b11;
                             if comb == 3 { break; }
                             *ro |= comb;
                             *r_anc |= comb;
-                            if *r_anc >= *ro {
-                                grid[ao] = ancestor as u16;
-                                if *r_anc == *ro {
-                                    *r_anc += 4;
-                                }
+                            if *r_anc == *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                *r_anc += 4;
+                                ao = ancestor;
+                            } else if *r_anc > *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                ao = ancestor;
                             } else {
                                 grid[ancestor] = ao as u16;
                                 ancestor = ao;
                                 r_anc = ro;
                             }
+                        }
+                        for p in 0..find_ptr {
+                            *grid.get_unchecked_mut(*find_stack.get_unchecked(p) as usize) = ao as u16;
                         }
                     }
                     if !left && *ptr.wrapping_sub(SIZE_REAL + 1) != 0 {
-                        let other = loc - SIZE_REAL - 1;
-                        let ao = find(&mut grid, other);
+                        let mut ao;
+                        let mut find_ptr = 0;
+                        {
+                            let mut curr = loc as u16 - SIZE_REAL16 - 1;
+                            while *grid.get_unchecked(curr as usize) != curr {
+                                *find_stack.get_unchecked_mut(find_ptr) = curr;
+                                find_ptr += 1;
+                                curr = *grid.get_unchecked(curr as usize);
+                            }
+                            ao = curr as usize;
+                        }
                         if ao != ancestor {
                             let ro = rp.wrapping_add(ao);
                             let comb = (*ro | *r_anc) & 0b11;
                             if comb == 3 { break; }
                             *ro |= comb;
                             *r_anc |= comb;
-                            if *r_anc >= *ro {
-                                grid[ao] = ancestor as u16;
-                                if *r_anc == *ro {
-                                    *r_anc += 4;
-                                }
+                            if *r_anc == *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                *r_anc += 4;
+                                ao = ancestor;
+                            } else if *r_anc > *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                ao = ancestor;
                             } else {
                                 grid[ancestor] = ao as u16;
                                 ancestor = ao;
                                 r_anc = ro;
                             }
                         }
+                        for p in 0..find_ptr {
+                            *grid.get_unchecked_mut(*find_stack.get_unchecked(p) as usize) = ao as u16;
+                        }
                     }
                     if !right && *ptr.wrapping_sub(SIZE_REAL - 1) != 0 {
-                        let other = loc - SIZE_REAL + 1;
-                        let ao = find(&mut grid, other);
+                        let mut ao;
+                        let mut find_ptr = 0;
+                        {
+                            let mut curr = loc as u16 - SIZE_REAL16 + 1;
+                            while *grid.get_unchecked(curr as usize) != curr {
+                                *find_stack.get_unchecked_mut(find_ptr) = curr;
+                                find_ptr += 1;
+                                curr = *grid.get_unchecked(curr as usize);
+                            }
+                            ao = curr as usize;
+                        }
                         if ao != ancestor {
                             let ro = rp.wrapping_add(ao);
                             let comb = (*ro | *r_anc) & 0b11;
                             if comb == 3 { break; }
                             *ro |= comb;
                             *r_anc |= comb;
-                            if *r_anc >= *ro {
-                                grid[ao] = ancestor as u16;
-                                if *r_anc == *ro {
-                                    *r_anc += 4;
-                                }
+                            if *r_anc == *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                *r_anc += 4;
+                                ao = ancestor;
+                            } else if *r_anc > *ro {
+                                *grid.get_unchecked_mut(ao) = ancestor as u16;
+                                ao = ancestor;
                             } else {
                                 grid[ancestor] = ao as u16;
                                 ancestor = ao;
                                 r_anc = ro;
                             }
+                        }
+                        for p in 0..find_ptr {
+                            *grid.get_unchecked_mut(*find_stack.get_unchecked(p) as usize) = ao as u16;
                         }
                     }
                 }
                 if !left && *ptr.wrapping_sub(1) != 0 {
-                    let other = loc - 1;
-                    let ao = find(&mut grid, other);
+                    let mut ao;
+                    let mut find_ptr = 0;
+                    {
+                        let mut curr = loc as u16 - 1;
+                        while *grid.get_unchecked(curr as usize) != curr {
+                            *find_stack.get_unchecked_mut(find_ptr) = curr;
+                            find_ptr += 1;
+                            curr = *grid.get_unchecked(curr as usize);
+                        }
+                        ao = curr as usize;
+                    }
                     if ao != ancestor {
                         let ro = rp.wrapping_add(ao);
                         let comb = (*ro | *r_anc) & 0b11;
                         if comb == 3 { break; }
                         *ro |= comb;
                         *r_anc |= comb;
-                        if *r_anc >= *ro {
-                            grid[ao] = ancestor as u16;
-                            if *r_anc == *ro {
-                                *r_anc += 4;
-                            }
+                        if *r_anc == *ro {
+                            *grid.get_unchecked_mut(ao) = ancestor as u16;
+                            *r_anc += 4;
+                            ao = ancestor;
+                        } else if *r_anc > *ro {
+                            *grid.get_unchecked_mut(ao) = ancestor as u16;
+                            ao = ancestor;
                         } else {
                             grid[ancestor] = ao as u16;
                             ancestor = ao;
                             r_anc = ro;
                         }
-                    }  
+                    }
+                    for p in 0..find_ptr {
+                        *grid.get_unchecked_mut(*find_stack.get_unchecked(p) as usize) = ao as u16;
+                    }
                 }
                 if !right && *ptr.wrapping_add(1) != 0 {
-                    let other = loc + 1;
-                    let ao = find(&mut grid, other);
+                    let mut ao;
+                    let mut find_ptr = 0;
+                    {
+                        let mut curr = loc as u16 + 1;
+                        while *grid.get_unchecked(curr as usize) != curr {
+                            *find_stack.get_unchecked_mut(find_ptr) = curr;
+                            find_ptr += 1;
+                            curr = *grid.get_unchecked(curr as usize);
+                        }
+                        ao = curr as usize;
+                    }
                     if ao != ancestor {
                         let ro = rp.wrapping_add(ao);
                         let comb = (*ro | *r_anc) & 0b11;
                         if comb == 3 { break; }
                         *ro |= comb;
                         *r_anc |= comb;
-                        if *r_anc >= *ro {
-                            grid[ao] = ancestor as u16;
-                            if *r_anc == *ro {
-                                *r_anc += 4;
-                            }
+                        if *r_anc == *ro {
+                            *grid.get_unchecked_mut(ao) = ancestor as u16;
+                            *r_anc += 4;
+                            ao = ancestor;
+                        } else if *r_anc > *ro {
+                            *grid.get_unchecked_mut(ao) = ancestor as u16;
+                            ao = ancestor;
                         } else {
                             grid[ancestor] = ao as u16;
                             // ancestor = ao;
                             // r_anc = ro;
                         }
+                    }
+                    for p in 0..find_ptr {
+                        *grid.get_unchecked_mut(*find_stack.get_unchecked(p) as usize) = ao as u16;
                     }
                 }
                 last_pos = pos2;
