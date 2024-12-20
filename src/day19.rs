@@ -3,7 +3,8 @@ use std::simd::prelude::*;
 
 pub fn part1(s: &str) -> u32 {
     unsafe {
-        let mut keys = HashSet::<u64>::new();
+        let mut keys = HashSet::<u32>::new();
+        keys.reserve(2048);
         let b = s.as_bytes();
         let bl = b.len();
         let mut ptr = 0;
@@ -22,7 +23,14 @@ pub fn part1(s: &str) -> u32 {
                     break 'read_keys;
                 }
                 word >>= 64 - (dst << 3);
-                keys.insert(word);
+                word |= (word & 0x1010101010101010) >> 1;
+                let mut word1 = (word as u32) & 0x0f0f0f0f;
+                let mut word2 = ((word >> 32) as u32) & 0x0f0f0f0f;
+                word1 = ((word1 & 0x0f000f00) >> 4) | (word1 & 0x000f000f);
+                word1 = ((word1 & 0x00ff0000) >> 8) | (word1 & 0x000000ff);
+                word2 = ((word2 & 0x0f000f00) << 4) | ((word2 & 0x000f000f) << 8);
+                word2 = ((word2 & 0x0000ff00) << 8) | (word2 & 0xff000000);
+                keys.insert(word1 | word2);
                 prev_pos = pos + 2;
                 seps &= seps.wrapping_sub(1);
                 seps &= seps.wrapping_sub(1);
@@ -36,13 +44,15 @@ pub fn part1(s: &str) -> u32 {
             let right = ptr + it.next().unwrap_unchecked();
             dp.fill(false);
             dp[0] = true;
-            let mut window = 0u64;
+            let mut window = 0u32;
             for i in 1..right-left+1 {
-                window = (window << 8) | b[left + i - 1] as u64;
-                let mut mask: u64 = 0xff;
+                let mut next = b[left + i - 1];
+                next |= (next & 0x10) >> 1;
+                window = (window << 4) | (next & 0xf) as u32;
+                let mut mask: u32 = 0xf;
                 for j in ((i as i32 - 8).max(0)..i as i32).rev() {
                     let window2 = window & mask;
-                    mask |= mask << 8;
+                    mask |= mask << 4;
                     if keys.contains(&window2) {
                         dp[i] |= dp[j as usize];
                     }
@@ -57,7 +67,8 @@ pub fn part1(s: &str) -> u32 {
 
 pub fn part2(s: &str) -> u64 {
     unsafe {
-        let mut keys = HashSet::<u64>::new();
+        let mut keys = HashSet::<u32>::new();
+        keys.reserve(2048);
         let b = s.as_bytes();
         let bl = b.len();
         let mut ptr = 0;
@@ -76,8 +87,14 @@ pub fn part2(s: &str) -> u64 {
                 }
                 let mut word = u64::from_be_bytes((&b[ptr+prev_pos..ptr+prev_pos+8]).try_into().unwrap_unchecked());
                 word >>= 64 - (dst << 3);
-                // word &= (1u64.unbounded_shl(dst << 3)).wrapping_sub(1);
-                keys.insert(word);
+                word |= (word & 0x1010101010101010) >> 1;
+                let mut word1 = (word as u32) & 0x0f0f0f0f;
+                let mut word2 = ((word >> 32) as u32) & 0x0f0f0f0f;
+                word1 = ((word1 & 0x0f000f00) >> 4) | (word1 & 0x000f000f);
+                word1 = ((word1 & 0x00ff0000) >> 8) | (word1 & 0x000000ff);
+                word2 = ((word2 & 0x0f000f00) << 4) | ((word2 & 0x000f000f) << 8);
+                word2 = ((word2 & 0x0000ff00) << 8) | (word2 & 0xff000000);
+                keys.insert(word1 | word2);
                 prev_pos = pos + 2;
                 seps &= seps.wrapping_sub(1);
                 seps &= seps.wrapping_sub(1);
@@ -91,13 +108,15 @@ pub fn part2(s: &str) -> u64 {
             let right = ptr + it.next().unwrap_unchecked();
             dp.fill(0);
             dp[0] = 1;
-            let mut window = 0u64;
+            let mut window = 0u32;
             for i in 1..right-left+1 {
-                window = (window << 8) | b[left + i - 1] as u64;
-                let mut mask: u64 = 0xff;
+                let mut next = b[left + i - 1];
+                next |= (next & 0x10) >> 1;
+                window = (window << 4) | (next & 0xf) as u32;
+                let mut mask: u32 = 0xf;
                 for j in ((i as i32 - 8).max(0)..i as i32).rev() {
                     let window2 = window & mask;
-                    mask |= mask << 8;
+                    mask |= mask << 4;
                     if keys.contains(&window2) {
                         dp[i] += dp[j as usize];
                     }
