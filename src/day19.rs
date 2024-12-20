@@ -46,16 +46,18 @@ pub fn part1(s: &str) -> u32 {
             dp.fill(false);
             dp[0] = true;
             let mut window = 0u32;
+            'cont:
             for i in 1..right-left+1 {
-                let mut next = b[left + i - 1];
+                let mut next = *b.get_unchecked(left + i - 1);
                 next |= (next & 0x10) >> 1;
                 window = (window << 4) | (next & 0xf) as u32;
                 let mut mask: u32 = 0xf;
                 for j in ((i as i32 - 8).max(0)..i as i32).rev() {
                     let window2 = window & mask;
                     mask |= mask << 4;
-                    if keys.contains(&window2) {
-                        dp[i] |= dp[j as usize];
+                    if keys.contains(&window2) && *dp.get_unchecked(j as usize) {
+                        dp[i] = true;
+                        continue 'cont;
                     }
                 }
             }
@@ -111,7 +113,8 @@ pub fn part2(s: &str) -> u64 {
             dp[0] = 1;
             let mut window = 0u32;
             for i in 1..right-left+1 {
-                let mut next = b[left + i - 1];
+                let to = dp.as_mut_ptr().add(i);
+                let mut next = *b.get_unchecked(left + i - 1);
                 next |= (next & 0x10) >> 1;
                 window = (window << 4) | (next & 0xf) as u32;
                 let mut mask: u32 = 0xf;
@@ -119,7 +122,7 @@ pub fn part2(s: &str) -> u64 {
                     let window2 = window & mask;
                     mask |= mask << 4;
                     if keys.contains(&window2) {
-                        dp[i] += dp[j as usize];
+                        *to += dp.get_unchecked(j as usize);
                     }
                 }
             }
