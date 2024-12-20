@@ -1,9 +1,10 @@
-use std::{collections::HashSet, simd::u8x64};
+use std::simd::u8x64;
 use std::simd::prelude::*;
+use fxhash::FxHashSet;
 
 pub fn part1(s: &str) -> u32 {
     unsafe {
-        let mut keys = HashSet::<u32>::new();
+        let mut keys = FxHashSet::default();
         keys.reserve(2048);
         let b = s.as_bytes();
         let bl = b.len();
@@ -67,7 +68,7 @@ pub fn part1(s: &str) -> u32 {
 
 pub fn part2(s: &str) -> u64 {
     unsafe {
-        let mut keys = HashSet::<u32>::new();
+        let mut keys = FxHashSet::default();
         keys.reserve(2048);
         let b = s.as_bytes();
         let bl = b.len();
